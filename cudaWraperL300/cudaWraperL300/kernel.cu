@@ -1,9 +1,13 @@
+#pragma once
+
+#include "cudaWrapperL300.h"
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
 #include <vector>
+#include <algorithm>
 
 #ifdef __CUDACC__
 
@@ -107,7 +111,7 @@ bool resetCuda() {
     return (cudaSuccess == cudaStatus);
 }
 
-bool addTwoVectors(int* c, const int* a, const int* b, unsigned int size)
+bool addTwoVectors(int* c, const int* a, const int* b, size_t size)
 {
     bool success{ false };
 

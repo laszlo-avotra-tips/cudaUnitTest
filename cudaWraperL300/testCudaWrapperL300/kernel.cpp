@@ -1,19 +1,20 @@
 #include "../cudaWraperL300/cudaWrapperL300.h"
 
 #include <stdio.h>
+#include <vector>
 
 int main()
 {
 
-    const int arraySize = 5;
-    const int a[arraySize] = { 1, 2, 3, 4, 5 };
-    const int b[arraySize] = { 10, 20, 30, 40, 50 };
-    int c[arraySize] = { 0 };
+    const size_t arraySize = 5;
+    const int a[arraySize] { 1, 2, 3, 4, 7 };
+    const int b[arraySize] { 10, 20, 30, 40, 50 };
+    int c[arraySize] {};
 
     // Add vectors in parallel.
     bool cudaStatus(false);
 
-    if(!addTwoVectors(c,a,b,arraySize)){
+    if(!addTwoVectors(c, a, b, arraySize)){
         fprintf(stderr, "addWithCuda failed!");
         return 1;
     }

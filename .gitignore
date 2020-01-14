@@ -1,6 +1,6 @@
 
-cudaWraperL300/.vs/cudaWraperL300/v16/.suo
-cudaWraperL300/.vs/cudaWraperL300/v16/Browse.VC.db
+*.suo
+*.db
 *.opendb
 *.ipch
 *.log
@@ -10,6 +10,8 @@ cudaWraperL300/.vs/cudaWraperL300/v16/Browse.VC.db
 *.exe
 *.exp
 *.ilk
-cudaWraperL300/cudaWraperL300/x64/Debug/kernel.cu.obj
 *.obj
-*.obj
+cudaVectorAddUt
+*.cache
+*.deps
+*cpp.obj

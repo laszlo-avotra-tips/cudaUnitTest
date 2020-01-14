@@ -12,8 +12,6 @@ int main()
     int c[arraySize] {};
 
     // Add vectors in parallel.
-    bool cudaStatus(false);
-
     if(!addTwoVectors(c, a, b, arraySize)){
         fprintf(stderr, "addWithCuda failed!");
         return 1;

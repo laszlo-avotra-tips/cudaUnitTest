@@ -9,11 +9,22 @@
 #include <vector>
 #include <algorithm>
 
+#define MINIMUN_VAL(x_,y_) (x_>y_)?x_:y_
+
+#ifndef __CUDACC__
+struct dim3 {
+    dim3(int x_, int y_, int z_) :x(x_), y(y_), z(z_) {}
+    int x;
+    int y;
+    int z;
+};
+#endif
+
 #ifdef __CUDACC__
 
 __global__ void addKernel(int *c, const int *a, const int *b)
 {
-    int i = threadIdx.x;
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
     c[i] = a[i] + b[i];
 }
 #endif
@@ -25,6 +36,10 @@ bool addWithCuda(int *c, const int *a, const int *b, unsigned int size)
     int *dev_b = 0;
     int *dev_c = 0;
     cudaError_t cudaStatus;
+
+ //    dim3 blocksPerGrid(size / 256, 1, 1);
+    dim3 blocksPerGrid(MINIMUN_VAL(size/256,1), 1, 1);
+    dim3 threadsPerBlock(256, 1, 1);
 
     // Choose which GPU to run on, change this on a multi-GPU system.
     cudaStatus = cudaSetDevice(0);
@@ -67,7 +82,7 @@ bool addWithCuda(int *c, const int *a, const int *b, unsigned int size)
 
     // Launch a kernel on the GPU with one thread for each element.
 #ifdef __CUDACC__
-    addKernel<<<1, size>>>(dev_c, dev_a, dev_b);
+    addKernel<<<blocksPerGrid, threadsPerBlock >>>(dev_c, dev_a, dev_b);
 #endif
 
     // Check for any errors launching the kernel
@@ -111,7 +126,7 @@ bool resetCuda() {
     return (cudaSuccess == cudaStatus);
 }
 
-bool addTwoVectors(int* c, const int* a, const int* b, size_t size)
+bool addTwoVectors(int* c, const int* a, const int* b, unsigned int size)
 {
     bool success{ false };
 

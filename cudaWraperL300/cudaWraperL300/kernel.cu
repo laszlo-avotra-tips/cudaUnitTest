@@ -3,6 +3,7 @@
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
+#include <vector>
 
 #ifdef __CUDACC__
 
@@ -105,3 +106,13 @@ bool resetCuda() {
     }
     return (cudaSuccess == cudaStatus);
 }
+
+bool addTwoVectors(int* c, const int* a, const int* b, unsigned int size)
+{
+    bool success{ false };
+
+    success = addWithCuda(c, a, b, size);
+
+    return success;
+}
+

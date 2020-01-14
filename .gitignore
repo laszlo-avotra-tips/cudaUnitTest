@@ -10,3 +10,6 @@ cudaWraperL300/.vs/cudaWraperL300/v16/Browse.VC.db
 *.exe
 *.exp
 *.ilk
+cudaWraperL300/cudaWraperL300/x64/Debug/kernel.cu.obj
+*.obj
+*.obj

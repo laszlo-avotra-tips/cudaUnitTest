@@ -14,4 +14,4 @@
 cudaVectorAddUt
 *.cache
 *.deps
-*cpp.obj
+*.cpp.obj

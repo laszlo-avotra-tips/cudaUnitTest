@@ -134,4 +134,97 @@ bool addTwoVectors(int* c, const int* a, const int* b, unsigned int size)
 
     return success;
 }
+bool allocateInputMemObj(unsigned short* devMem, unsigned int linesPerFrame, unsigned int recordLength)
+{
+    cudaError_t cudaStatus;
+
+    const int size = linesPerFrame * recordLength * sizeof(unsigned short);
+    cudaStatus = cudaMalloc((void**)&devMem, size);
+    return cudaStatus == cudaSuccess;
+}
+
+bool initializeInputMemObj(unsigned short* devMem, unsigned short* data, unsigned int size)
+{
+    cudaError_t cudaStatus;
+    cudaStatus = cudaMemcpy(devMem, data, size, cudaMemcpyHostToDevice);
+    return cudaStatus != cudaSuccess;
+}
+
+bool allocateOutputMemObj(float* devMem, unsigned int linesPerFrame, unsigned int rescalingDataLength)
+{
+    cudaError_t cudaStatus;
+
+    const int size = linesPerFrame * rescalingDataLength * sizeof(float);
+    cudaStatus = cudaMalloc((void**)&devMem, size);
+    return cudaStatus == cudaSuccess;
+}
+
+bool allocateFracSamplesMemObj(float* devMem, unsigned int rescalingDataLength)
+{
+    cudaError_t cudaStatus;
+
+    const int size = rescalingDataLength * sizeof(float);
+    cudaStatus = cudaMalloc((void**)&devMem, size);
+    return cudaStatus == cudaSuccess;
+}
+
+bool initializeFracSamplesMemObj(float* devMem, float* data, unsigned int size)
+{
+    if (data) {
+        cudaError_t cudaStatus;
+        cudaStatus = cudaMemcpy(devMem, data, size, cudaMemcpyHostToDevice);
+        return cudaStatus != cudaSuccess;
+    }
+    return false;
+}
+
+bool cudaRescale(unsigned short* data, unsigned int size,
+    float* wholeSamples,
+    float* fractionalSamples,
+    char* errorMsg,
+    unsigned int linesPerFrame, unsigned int recordLength, unsigned int rescalingDataLength)
+{
+    bool success{ false };
+
+    if (data && size) {
+        success = true;
+        if (errorMsg) {
+            *errorMsg = 0;
+        }
+    } else {
+        if (errorMsg) {
+            sprintf(errorMsg, "Invalid arguments");
+        }
+    }
+
+    unsigned short* rescaleInputMemoryObject(0);
+    float* rescaleOutputMemObj(0);
+    float* fracSamplesMemObj(0);
+
+    if (success) {
+        success = allocateInputMemObj(rescaleInputMemoryObject, linesPerFrame, recordLength);
+    }
+
+    if (success) {
+        success = initializeInputMemObj(rescaleInputMemoryObject, data, size);
+    } 
+
+    if (success) {
+        cudaFree(rescaleInputMemoryObject);
+    }
+
+    if (success) {
+        success = allocateOutputMemObj(rescaleOutputMemObj, linesPerFrame, rescalingDataLength);
+    }
+
+    if (success) {
+        success = allocateFracSamplesMemObj(fracSamplesMemObj, rescalingDataLength);
+    }
+
+    if (success) {
+        success = initializeFracSamplesMemObj(fracSamplesMemObj, fractionalSamples, rescalingDataLength);
+    }
+
+    return success;
+}
 

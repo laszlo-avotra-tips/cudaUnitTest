@@ -5,7 +5,7 @@
 bool addWithCuda(int* c, const int* a, const int* b, unsigned int size);
 bool resetCuda();
 bool addTwoVectors(int* c, const int* a, const int* b, unsigned int size);
-bool cudaRescale(unsigned short* data, unsigned int size, 
+bool cudaRescale(float* output, unsigned short* data, unsigned int size, 
 	float* wholeSamples = 0,
 	float* fractionalSamples = 0,
 	char* errorMsg = 0,

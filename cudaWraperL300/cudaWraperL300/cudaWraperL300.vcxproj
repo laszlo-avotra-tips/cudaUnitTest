@@ -79,6 +79,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="kernel.cu" />
+    <CudaCompile Include="kernelSample.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cudaWrapperL300.h" />

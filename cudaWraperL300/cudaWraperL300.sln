@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cudaWraperL300", "cudaWrape
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testCudaWrapperL300", "testCudaWrapperL300\testCudaWrapperL300.vcxproj", "{E5B92369-DFA8-4489-8E13-E5D12E6EE076}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DE642C98-803F-43C3-99F2-02A5CD70A8DB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

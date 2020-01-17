@@ -28,26 +28,44 @@ __global__ void addKernel(int *c, const int *a, const int *b)
     c[i] = a[i] + b[i];
 }
 
-__global__ void matrixAdd(float c[6][6], float a[6][6], float b[6][6])
+__global__ void matrixAddKernel(int c[][4], const int a[][4], const int b[][4])
 {
     int j = blockIdx.x * blockDim.x + threadIdx.x;
     int i = blockIdx.y * blockDim.y + threadIdx.y;
     c[i][j] = a[i][j] + b[i][j];
 }
 
+__global__ void matrixAddKernel(int c[], const int a[], const int b[])
+{
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    int i = blockIdx.y * blockDim.y + threadIdx.y;
+    c[4*j + i] = a[4 * j + i] + b[4 * j + i];
+}
+
 #endif
 
-bool matrixAdd(float* c, const float* a, const float* b, const size_t N = 6)
+bool matrix4by4Add(int c[][4], const int a[][4], const int b[][4], const unsigned int size)
 {
-    float* dev_a = 0;
-    float* dev_b = 0;
-    float* dev_c = 0;
+    int* dev_a = 0;
+    int* dev_b = 0;;
+    int* dev_c = 0;
+
+    int va[16];
+    int vb[16];
+    int vc[16];
+
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            va[i + 4 * j] = a[i][j];
+            vb[i + 4 * j] = b[i][j];
+        }
+    }
+
     cudaError_t cudaStatus;
 
-    //    dim3 blocksPerGrid(size / 256, 1, 1);
-    dim3 blocksPerGrid(MINIMUN_VAL(N / 4, 1), MINIMUN_VAL(N / 4, 1), 1);
+    dim3 blocksPerGrid(1, 1, 1);
     dim3 threadsPerBlock(4, 4, 1);
-    size_t size = N * N * sizeof(float);
+ //   unsigned int size = N * N * sizeof(int);
 
     // Choose which GPU to run on, change this on a multi-GPU system.
     cudaStatus = cudaSetDevice(0);
@@ -57,40 +75,40 @@ bool matrixAdd(float* c, const float* a, const float* b, const size_t N = 6)
     }
 
     // Allocate GPU buffers for three vectors (two input, one output)    .
-    cudaStatus = cudaMalloc((void**)&dev_c, size);
+    cudaStatus = cudaMalloc((void**)&dev_c, size * sizeof(int));
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMalloc failed!");
         goto Error;
     }
 
-    cudaStatus = cudaMalloc((void**)&dev_a, size);
+    cudaStatus = cudaMalloc((void**)&dev_a, size * sizeof(int));
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMalloc failed!");
         goto Error;
     }
 
-    cudaStatus = cudaMalloc((void**)&dev_b, size);
+    cudaStatus = cudaMalloc((void**)&dev_b, size * sizeof(int));
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMalloc failed!");
         goto Error;
     }
 
     // Copy input vectors from host memory to GPU buffers.
-    cudaStatus = cudaMemcpy(dev_a, a, size, cudaMemcpyHostToDevice);
+    cudaStatus = cudaMemcpy(dev_a, va, size * sizeof(int), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+        fprintf(stderr, "dev_a cudaMemcpy failed!");
         goto Error;
     }
 
-    cudaStatus = cudaMemcpy(dev_b, b, size, cudaMemcpyHostToDevice);
+    cudaStatus = cudaMemcpy(dev_b, vb, size * sizeof(int), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+        fprintf(stderr, "dev_b cudaMemcpy failed!");
         goto Error;
     }
 
     // Launch a kernel on the GPU with one thread for each element.
 #ifdef __CUDACC__
-    matrixAdd << <blocksPerGrid, threadsPerBlock >> > (dev_c, dev_a, dev_b);
+    matrixAddKernel << <blocksPerGrid, threadsPerBlock >> > (dev_c, dev_a, dev_b);
 #endif
 
     // Check for any errors launching the kernel
@@ -109,10 +127,16 @@ bool matrixAdd(float* c, const float* a, const float* b, const size_t N = 6)
     }
 
     // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaStatus = cudaMemcpy(vc, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+        fprintf(stderr, "dev_c cudaMemcpy failed!");
         goto Error;
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            c[i][j] = vc[i + 4 * j];
+        }
     }
 
 Error:

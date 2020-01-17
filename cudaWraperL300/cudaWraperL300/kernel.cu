@@ -214,7 +214,7 @@ bool cudaRescale(float* output, unsigned short* data, unsigned int inputSize,
 
     dim3 blocksPerGrid(inputSize/16, inputSize/16, 1);
     dim3 threadsPerBlock(16, 16, 1);
-
+/*
 #ifdef __CUDACC__
     rescale_kernel << <blocksPerGrid, threadsPerBlock >> > (
         rescaleInputMemoryObject, rescaleOutputMemObj, 
@@ -222,6 +222,7 @@ bool cudaRescale(float* output, unsigned short* data, unsigned int inputSize,
         recordLength, rescalingDataLength
         );
 #endif
+ 
     // Check for any errors launching the kernel
     cudaError_t cudaStatus = cudaGetLastError();
     if (cudaStatus != cudaSuccess) {
@@ -240,7 +241,7 @@ bool cudaRescale(float* output, unsigned short* data, unsigned int inputSize,
             fprintf(stderr, "cudaMemcpy failed!");
         }
     }
-
+*/
 //    success = cudaStatus == cudaSuccess;
 
     if (success) {

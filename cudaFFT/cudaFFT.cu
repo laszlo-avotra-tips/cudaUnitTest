@@ -33,15 +33,14 @@ struct dim3 {
 
 // Complex data type
 using Complex = std::complex<float>;
+using ComplexVector = std::vector<Complex>;
 
 ////////////////////////////////////////////////////////////////////////////////
 // declaration, forward
 void runTest(int argc, char **argv);
 
 //// The filter size is assumed to be a number smaller than the signal size
-int cudaFFt(Complex* data, const size_t signalSize, bool isFFT /*versus iFFT*/);
-
-bool compareData(const Complex* originalData, const Complex* transformedData, const size_t SIGNAL_SIZE);
+//#define SIGNAL_SIZE 256
 
 ////////////////////////////////////////////////////////////////////////////////
 // Program main
@@ -53,131 +52,84 @@ int main(int argc, char **argv) {
 ////////////////////////////////////////////////////////////////////////////////
 //! Run a simple test for CUDA
 ////////////////////////////////////////////////////////////////////////////////
-void runTest(int argc, char** argv) {
+void runTest(int argc, char **argv) {
+  std::cout << "[cudaFFT] is starting..." << std::endl;
 
-    bool success{ false };
-    std::cout << "[cudaFFT] is starting..." << std::endl;
+  findCudaDevice(argc, (const char **)argv);
 
-    findCudaDevice(argc, (const char**)argv);
+  const size_t SIGNAL_SIZE{ 256 };
 
-    const size_t SIGNAL_SIZE{ 100 };
+  // Allocate host memory for the signal
+  Complex* h_signal = new Complex[SIGNAL_SIZE];
 
-    // Allocate host memory for the signal
-    Complex* h_signal = new Complex[SIGNAL_SIZE];
-    Complex* original = new Complex[SIGNAL_SIZE];
+  Complex* h_signal_fft_ifft = new Complex[SIGNAL_SIZE];
 
-    Complex* h_signal_fft_ifft = new Complex[SIGNAL_SIZE];
+  // Initialize the memory for the signal
+  for (unsigned int i = 0; i < SIGNAL_SIZE; ++i) {
+      h_signal[i] = { rand() / static_cast<float>(RAND_MAX), 0 };
+      h_signal_fft_ifft[i] = { float(i), 1000.f * i };
+  }
 
-    // Initialize the memory for the signal
-    for (unsigned int i = 0; i < SIGNAL_SIZE; ++i) {
-        original[i] = { rand() / static_cast<float>(RAND_MAX), 0.0 };
-        h_signal[i] = original[i];
-    }
+  int mem_size = sizeof(Complex) * SIGNAL_SIZE;
 
-    //perform a direct Fourier
-    cudaFFt(h_signal, SIGNAL_SIZE, true);
+  // Allocate device memory for signal
+  Complex *d_signal;
+  checkCudaErrors(cudaMalloc(reinterpret_cast<void **>(&d_signal), mem_size));
 
-    if (false) {
-        // Copy the fourier coefs into h_signal_fft_ifft
-        for (unsigned int i = 0; i < SIGNAL_SIZE; ++i) {
-            h_signal_fft_ifft[i] = h_signal[i];
-        }
+  // Copy host memory to device
+  checkCudaErrors(cudaMemcpy(d_signal, h_signal, mem_size, cudaMemcpyHostToDevice));
 
-        //perform an inverse Fourier
-        cudaFFt(h_signal_fft_ifft, SIGNAL_SIZE, false);
+  // CUFFT plan simple API
+  cufftHandle plan;
+  checkCudaErrors(cufftPlan1d(&plan, mem_size, CUFFT_C2C, 1));
 
-        //result scaling 
-        for (int i = 0; i < SIGNAL_SIZE; ++i) {
-            h_signal_fft_ifft[i] = { h_signal_fft_ifft[i].real() / 8.0f / SIGNAL_SIZE, 0 };
-        }
-        success = compareData(original, h_signal_fft_ifft, SIGNAL_SIZE);
-    }
-    else {
-        //perform an inverse Fourier
-        cudaFFt(h_signal, SIGNAL_SIZE, false);
+  // Transform signal and kernel
+  std::cout << "Transforming signal cufftExecC2" << std::endl;
 
-        //result scaling 
-        for (int i = 0; i < SIGNAL_SIZE; ++i) {
-            h_signal[i] = { h_signal[i].real() / 8.0f / SIGNAL_SIZE, 0 };
-        }
-        success = compareData(original, h_signal, SIGNAL_SIZE);
-    }
+  checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex *>(d_signal),
+                               reinterpret_cast<cufftComplex *>(d_signal),
+                               CUFFT_FORWARD));
 
+  // Check if kernel execution generated and error
+  getLastCudaError("Kernel execution failed [ ComplexPointwiseMulAndScale ]");
 
-    // cleanup memory
-    delete h_signal;
-    delete h_signal_fft_ifft;
+  // Transform signal back
+  std::cout << "Transforming signal back cufftExecC2C" << std::endl;
 
-    exit((success) ? EXIT_SUCCESS : EXIT_FAILURE);  
-    // Destroy CUFFT context
-}
+  checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex *>(d_signal),
+                               reinterpret_cast<cufftComplex *>(d_signal),
+                               CUFFT_INVERSE));
 
-int cudaFFt(Complex* h_signal, const size_t signalSize, bool isFFT /*versus iFFT*/)
-{
+  // Copy device memory to host
+  checkCudaErrors(cudaMemcpy(h_signal_fft_ifft, d_signal, mem_size,
+                             cudaMemcpyDeviceToHost));
+  // check result
+  int iTestResult = 0;
 
-    int mem_size = sizeof(Complex) * signalSize;
+  //result scaling 
+  for (int i = 0; i < SIGNAL_SIZE; ++i) {
+      h_signal_fft_ifft[i] = { h_signal_fft_ifft[i].real() / 8.0f / SIGNAL_SIZE, 0 };
+  }
 
-    // Allocate device memory for signal
-    Complex* d_signal;
-    checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&d_signal), mem_size));
+  for (int i = 0; i < SIGNAL_SIZE; ++i) {
+      if ( std::abs(h_signal_fft_ifft[i].real() - h_signal[i].real()) > 1e-3f)
+          iTestResult += 1;
+  }
 
-    // Copy host memory to device
-    checkCudaErrors(cudaMemcpy(d_signal, h_signal, mem_size, cudaMemcpyHostToDevice));
+  std::cout << "The first 10 real values: ";
+  for (int i = 0; i < 10; ++i) {
+      std::cout << h_signal[i].real() << " ";
+  }
+  std::cout << std::endl;
 
-    // CUFFT plan simple API
-    cufftHandle plan;
-    checkCudaErrors(cufftPlan1d(&plan, mem_size, CUFFT_C2C, 1));
+  // Destroy CUFFT context
+  checkCudaErrors(cufftDestroy(plan));
 
-    // Transform signal and kernel
-    if(isFFT)
-        std::cout << "Direct Transform with cufftExecC2" << std::endl;
-    else
-        std::cout << "Inverse Transform with cufftExecC2C" << std::endl;
+  // cleanup memory
+  delete h_signal;
+  delete h_signal_fft_ifft;
 
+  checkCudaErrors(cudaFree(d_signal));
 
-    if (isFFT) {
-        checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
-            reinterpret_cast<cufftComplex*>(d_signal),
-            CUFFT_FORWARD));
-    }
-    else {
-        checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
-            reinterpret_cast<cufftComplex*>(d_signal),
-            CUFFT_INVERSE));
-    }
-
-    // Check if kernel execution generated and error
-    getLastCudaError("Kernel execution failed [ ComplexPointwiseMulAndScale ]");
-
-    // Copy device memory to host
-    checkCudaErrors(cudaMemcpy(h_signal, d_signal, mem_size,
-        cudaMemcpyDeviceToHost));
-
-    checkCudaErrors(cufftDestroy(plan));
-    checkCudaErrors(cudaFree(d_signal));
-
-    return 0;
-}
-
-bool compareData(const Complex* originalData, const Complex* transformedData, const size_t dataSize)
-{
-    // check result
-    int iTestResult = 0;
-
-    for (int i = 0; i < dataSize; ++i) {
-        if (std::abs(transformedData[i].real() - originalData[i].real()) > 1e-3f)
-            iTestResult += 1;
-    }
-
-    std::cout << "The first 10 real values:" << std::endl;
-    for (int i = 0; i < 10; ++i) {
-        std::cout << originalData[i].real() << " ";
-    }
-    std::cout << std::endl;
-    for (int i = 0; i < 10; ++i) {
-        std::cout << transformedData[i].real() << " ";
-    }
-    std::cout << std::endl;
-
-    return !bool(iTestResult);
+  exit((iTestResult == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
 }

@@ -13,16 +13,12 @@
 
 // includes, system
 #include <algorithm>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <iostream>
 
 // includes, project
 #include <cuda_runtime.h>
 #include <cufft.h>
 #include <helper_cuda.h>
-//#include <helper_functions.h>
 
 #ifndef __CUDACC__
 struct dim3 {
@@ -54,7 +50,7 @@ int main(int argc, char **argv) {
 //! Run a simple test for CUDA
 ////////////////////////////////////////////////////////////////////////////////
 void runTest(int argc, char **argv) {
-  printf("[cudaFFT] is starting...\n");
+  std::cout << "[cudaFFT] is starting..." << std::endl;
 
   findCudaDevice(argc, (const char **)argv);
 
@@ -96,7 +92,8 @@ void runTest(int argc, char **argv) {
   getLastCudaError("Kernel execution failed [ ComplexPointwiseMulAndScale ]");
 
   // Transform signal back
-  printf("Transforming signal back cufftExecC2C\n");
+  std::cout << "Transforming signal back cufftExecC2C" << std::endl;
+
   checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex *>(d_signal),
                                reinterpret_cast<cufftComplex *>(d_signal),
                                CUFFT_INVERSE));
@@ -111,14 +108,6 @@ void runTest(int argc, char **argv) {
   for (int i = 0; i < SIGNAL_SIZE; ++i) {
       h_signal_fft_ifft[i].x = h_signal_fft_ifft[i].x / 8.0f / SIGNAL_SIZE;
   }
-
-  //bTestResult = sdkCompareL2fe(
-  //    reinterpret_cast<float *>(h_signal),
-  //    reinterpret_cast<float *>(h_signal_fft_ifft), SIGNAL_SIZE, 1e-3f);
-
-  //for (int i = 0; i < SIGNAL_SIZE; ++i) {
-  //    printf("h_signal = %f, h_signal_fft_ifft = %f k = %f\n\r", h_signal[i].x, h_signal_fft_ifft[i].x, h_signal_fft_ifft[i].x/ h_signal[i].x);
-  //}
 
   for (int i = 0; i < SIGNAL_SIZE; ++i) {
       if ( std::abs(h_signal_fft_ifft[i].x - h_signal[i].x) > 1e-3f)

@@ -12,6 +12,7 @@
 /* Example showing the use of CUFFT for fast 1D-convolution using FFT. */
 
 // includes, system
+#include <algorithm>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,9 +21,8 @@
 // includes, project
 #include <cuda_runtime.h>
 #include <cufft.h>
-#include <cufftXt.h>
 #include <helper_cuda.h>
-#include <helper_functions.h>
+//#include <helper_functions.h>
 
 #ifndef __CUDACC__
 struct dim3 {
@@ -69,8 +69,8 @@ void runTest(int argc, char **argv) {
   for (unsigned int i = 0; i < SIGNAL_SIZE; ++i) {
     h_signal[i].x = rand() / static_cast<float>(RAND_MAX);
     h_signal[i].y = 0;
-    h_signal_fft_ifft[i].x = i;
-    h_signal_fft_ifft[i].y = 1000 * i;
+    h_signal_fft_ifft[i].x = float(i);
+    h_signal_fft_ifft[i].y = 1000.0f * i;
   }
 
   int mem_size = sizeof(Complex) * SIGNAL_SIZE;
@@ -105,20 +105,25 @@ void runTest(int argc, char **argv) {
   checkCudaErrors(cudaMemcpy(h_signal_fft_ifft, d_signal, mem_size,
                              cudaMemcpyDeviceToHost));
   // check result
-  bool bTestResult = true;
+  int iTestResult = 0;
 
   //result scaling 
   for (int i = 0; i < SIGNAL_SIZE; ++i) {
       h_signal_fft_ifft[i].x = h_signal_fft_ifft[i].x / 8.0f / SIGNAL_SIZE;
   }
 
-  bTestResult = sdkCompareL2fe(
-      reinterpret_cast<float *>(h_signal),
-      reinterpret_cast<float *>(h_signal_fft_ifft), SIGNAL_SIZE, 1e-3f);
+  //bTestResult = sdkCompareL2fe(
+  //    reinterpret_cast<float *>(h_signal),
+  //    reinterpret_cast<float *>(h_signal_fft_ifft), SIGNAL_SIZE, 1e-3f);
 
   //for (int i = 0; i < SIGNAL_SIZE; ++i) {
   //    printf("h_signal = %f, h_signal_fft_ifft = %f k = %f\n\r", h_signal[i].x, h_signal_fft_ifft[i].x, h_signal_fft_ifft[i].x/ h_signal[i].x);
   //}
+
+  for (int i = 0; i < SIGNAL_SIZE; ++i) {
+      if ( std::abs(h_signal_fft_ifft[i].x - h_signal[i].x) > 1e-3f)
+          iTestResult += 1;
+  }
 
   // Destroy CUFFT context
   checkCudaErrors(cufftDestroy(plan));
@@ -128,5 +133,5 @@ void runTest(int argc, char **argv) {
   free(h_signal_fft_ifft);
   checkCudaErrors(cudaFree(d_signal));
 
-  exit(bTestResult ? EXIT_SUCCESS : EXIT_FAILURE);
+  exit((iTestResult == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
 }

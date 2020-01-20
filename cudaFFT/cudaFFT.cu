@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <iostream>
 #include <complex>
+#include <vector>
 
 // includes, project
 #include <cuda_runtime.h>
@@ -31,16 +32,15 @@ struct dim3 {
 #endif
 
 // Complex data type
-//typedef float2 Complex;
-
-typedef std::complex<float> Complex;
+using Complex = std::complex<float>;
+using ComplexVector = std::vector<Complex>;
 
 ////////////////////////////////////////////////////////////////////////////////
 // declaration, forward
 void runTest(int argc, char **argv);
 
-// The filter size is assumed to be a number smaller than the signal size
-#define SIGNAL_SIZE 256
+//// The filter size is assumed to be a number smaller than the signal size
+//#define SIGNAL_SIZE 256
 
 ////////////////////////////////////////////////////////////////////////////////
 // Program main
@@ -57,12 +57,12 @@ void runTest(int argc, char **argv) {
 
   findCudaDevice(argc, (const char **)argv);
 
-  // Allocate host memory for the signal
-  Complex *h_signal =
-      reinterpret_cast<Complex *>(malloc(sizeof(Complex) * SIGNAL_SIZE));
+  const size_t SIGNAL_SIZE{ 256 };
 
-  Complex* h_signal_fft_ifft =
-      reinterpret_cast<Complex*>(malloc(sizeof(Complex) * SIGNAL_SIZE));
+  // Allocate host memory for the signal
+  Complex* h_signal = new Complex[SIGNAL_SIZE];
+
+  Complex* h_signal_fft_ifft = new Complex[SIGNAL_SIZE];
 
   // Initialize the memory for the signal
   for (unsigned int i = 0; i < SIGNAL_SIZE; ++i) {
@@ -75,16 +75,17 @@ void runTest(int argc, char **argv) {
   // Allocate device memory for signal
   Complex *d_signal;
   checkCudaErrors(cudaMalloc(reinterpret_cast<void **>(&d_signal), mem_size));
+
   // Copy host memory to device
-  checkCudaErrors(
-      cudaMemcpy(d_signal, h_signal, mem_size, cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(d_signal, h_signal, mem_size, cudaMemcpyHostToDevice));
 
   // CUFFT plan simple API
   cufftHandle plan;
   checkCudaErrors(cufftPlan1d(&plan, mem_size, CUFFT_C2C, 1));
 
   // Transform signal and kernel
-  printf("Transforming signal cufftExecC2C\n");
+  std::cout << "Transforming signal cufftExecC2" << std::endl;
+
   checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex *>(d_signal),
                                reinterpret_cast<cufftComplex *>(d_signal),
                                CUFFT_FORWARD));
@@ -125,8 +126,9 @@ void runTest(int argc, char **argv) {
   checkCudaErrors(cufftDestroy(plan));
 
   // cleanup memory
-  free(h_signal);
-  free(h_signal_fft_ifft);
+  delete h_signal;
+  delete h_signal_fft_ifft;
+
   checkCudaErrors(cudaFree(d_signal));
 
   exit((iTestResult == 0) ? EXIT_SUCCESS : EXIT_FAILURE);

@@ -14,6 +14,7 @@
 // includes, system
 #include <algorithm>
 #include <iostream>
+#include <complex>
 
 // includes, project
 #include <cuda_runtime.h>
@@ -30,7 +31,9 @@ struct dim3 {
 #endif
 
 // Complex data type
-typedef float2 Complex;
+//typedef float2 Complex;
+
+typedef std::complex<float> Complex;
 
 ////////////////////////////////////////////////////////////////////////////////
 // declaration, forward
@@ -63,10 +66,8 @@ void runTest(int argc, char **argv) {
 
   // Initialize the memory for the signal
   for (unsigned int i = 0; i < SIGNAL_SIZE; ++i) {
-    h_signal[i].x = rand() / static_cast<float>(RAND_MAX);
-    h_signal[i].y = 0;
-    h_signal_fft_ifft[i].x = float(i);
-    h_signal_fft_ifft[i].y = 1000.0f * i;
+      h_signal[i] = { rand() / static_cast<float>(RAND_MAX), 0 };
+      h_signal_fft_ifft[i] = { float(i), 1000.f * i };
   }
 
   int mem_size = sizeof(Complex) * SIGNAL_SIZE;
@@ -106,13 +107,19 @@ void runTest(int argc, char **argv) {
 
   //result scaling 
   for (int i = 0; i < SIGNAL_SIZE; ++i) {
-      h_signal_fft_ifft[i].x = h_signal_fft_ifft[i].x / 8.0f / SIGNAL_SIZE;
+      h_signal_fft_ifft[i] = { h_signal_fft_ifft[i].real() / 8.0f / SIGNAL_SIZE, 0 };
   }
 
   for (int i = 0; i < SIGNAL_SIZE; ++i) {
-      if ( std::abs(h_signal_fft_ifft[i].x - h_signal[i].x) > 1e-3f)
+      if ( std::abs(h_signal_fft_ifft[i].real() - h_signal[i].real()) > 1e-3f)
           iTestResult += 1;
   }
+
+  std::cout << "The first 10 real values: ";
+  for (int i = 0; i < 10; ++i) {
+      std::cout << h_signal[i].real() << " ";
+  }
+  std::cout << std::endl;
 
   // Destroy CUFFT context
   checkCudaErrors(cufftDestroy(plan));

@@ -18,7 +18,7 @@
 
 #include <cudaFFTwrapper.h>
 
-#ifndef __CUDACC__
+#ifndef __CUDACC__ //this not functional it only silences the editor warnigs
 struct dim3 {
     dim3(int x_, int y_, int z_) :x(x_), y(y_), z(z_) {}
     int x;
@@ -33,11 +33,11 @@ using Complex = std::complex<float>;
 ////////////////////////////////////////////////////////////////////////////////
 // declaration, forward
 void runTest(int argc, char **argv);
-void addjustCoefficientMagnitude(Complex* h_data, size_t dataSize) noexcept;
+void addjustCoefficientMagnitude(Complex* h_data, long dataSize) noexcept;
 int isOriginalEqualToTheTransformedAndInverseTransformenData(
-    const Complex* original, const Complex* transformed, size_t dataSize) noexcept;
-void printTheData(const Complex* original, const Complex* transformed, size_t dataSize);
-void initializeTheSignals(Complex* fft, Complex* invfft, size_t dataSize) noexcept;
+    const Complex* original, const Complex* transformed, long dataSize) noexcept;
+void printTheData(const Complex* original, const Complex* transformed, long dataSize);
+void initializeTheSignals(Complex* fft, Complex* invfft, long dataSize) noexcept;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Program main
@@ -54,14 +54,12 @@ void runTest(int argc, char **argv) {
 
   /*findCudaDevice(argc, (const char **)argv);*/
 
-  const size_t SIGNAL_SIZE{ 256 };
+  const long SIGNAL_SIZE(256);
 
   // Allocate host memory for the signal
-  //Complex* h_signal = new Complex[SIGNAL_SIZE];
-  std::unique_ptr<Complex[]> h_signal = std::make_unique<Complex[]>(SIGNAL_SIZE);
-
-  //Complex* h_signal_fft_ifft = new Complex[SIGNAL_SIZE];
-  std::unique_ptr<Complex[]> h_signal_fft_ifft = std::make_unique<Complex[]>(SIGNAL_SIZE);
+  auto h_signal = std::move(std::make_unique<std::complex<float>[]>(SIGNAL_SIZE));
+  auto h_signal_fft_ifft = std::move(std::make_unique<std::complex<float>[]>(SIGNAL_SIZE));
+  
   initializeTheSignals(h_signal.get(), h_signal_fft_ifft.get(), SIGNAL_SIZE);
   
   ComputeTheFFT(h_signal.get(), h_signal_fft_ifft.get(), SIGNAL_SIZE);
@@ -76,25 +74,20 @@ void runTest(int argc, char **argv) {
 
   printTheData(h_signal.get(), h_signal_fft_ifft.get(), 10);
 
-
-  // cleanup memory
-  //delete h_signal;
-  //delete h_signal_fft_ifft;
-
   exit((iTestResult == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
-void addjustCoefficientMagnitude(Complex* h_data, size_t dataSize) noexcept
+void addjustCoefficientMagnitude(Complex* h_data, long dataSize) noexcept
 {
     if (h_data) {
-        for (size_t i = 0; i < dataSize; ++i) {
+        for (long i = 0; i < dataSize; ++i) {
             h_data[i] = { h_data[i].real() / 8.0f / dataSize, 0 };
         }
     }
 }
 
 int isOriginalEqualToTheTransformedAndInverseTransformenData(
-    const Complex* original, const Complex* transformed, size_t dataSize) noexcept
+    const Complex* original, const Complex* transformed, long dataSize) noexcept
 {
     int iTestResult = 1;
     if (original && transformed) {
@@ -107,7 +100,7 @@ int isOriginalEqualToTheTransformedAndInverseTransformenData(
     return iTestResult;
 }
 
-void printTheData(const Complex* original, const Complex* transformed, size_t dataSize)
+void printTheData(const Complex* original, const Complex* transformed, long dataSize)
 {
     std::cout << "The first " << dataSize << " real values:" << std::endl;
     if (original) {
@@ -124,9 +117,9 @@ void printTheData(const Complex* original, const Complex* transformed, size_t da
     }
 }
 
-void initializeTheSignals(Complex* fft, Complex* invfft, size_t dataSize) noexcept
+void initializeTheSignals(Complex* fft, Complex* invfft, long dataSize) noexcept
 {
-    for (size_t i = 0; i < dataSize; ++i) {
+    for (long i = 0; i < dataSize; ++i) {
         if(fft)
             fft[i] = { rand() / static_cast<float>(RAND_MAX), 0 };
         if(invfft)

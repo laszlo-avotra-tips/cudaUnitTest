@@ -38,9 +38,12 @@ using ComplexVector = std::vector<Complex>;
 ////////////////////////////////////////////////////////////////////////////////
 // declaration, forward
 void runTest(int argc, char **argv);
+void addjustCoefficientMagnitude(Complex* h_data, size_t dataSize);
+int isOriginalEqualToTheTransformedAndInverseTransformenData(
+    const Complex* original, const Complex* transformed, size_t dataSize);
+void printTheData(const Complex* original, const Complex* transformed, size_t dataSize);
 
 //// The filter size is assumed to be a number smaller than the signal size
-//#define SIGNAL_SIZE 256
 
 ////////////////////////////////////////////////////////////////////////////////
 // Program main
@@ -61,7 +64,6 @@ void runTest(int argc, char **argv) {
 
   // Allocate host memory for the signal
   Complex* h_signal = new Complex[SIGNAL_SIZE];
-
   Complex* h_signal_fft_ifft = new Complex[SIGNAL_SIZE];
 
   // Initialize the memory for the signal
@@ -85,42 +87,38 @@ void runTest(int argc, char **argv) {
 
   // Transform signal and kernel
   std::cout << "Transforming signal cufftExecC2" << std::endl;
-
   checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex *>(d_signal),
                                reinterpret_cast<cufftComplex *>(d_signal),
                                CUFFT_FORWARD));
+  //h_signal has the original coefficients
+  //d_signal has the direct FFT coefficients
 
   // Check if kernel execution generated and error
   getLastCudaError("Kernel execution failed [ ComplexPointwiseMulAndScale ]");
-
   // Transform signal back
   std::cout << "Transforming signal back cufftExecC2C" << std::endl;
 
   checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex *>(d_signal),
                                reinterpret_cast<cufftComplex *>(d_signal),
                                CUFFT_INVERSE));
+  //h_signal has the original coefficients
+  //d_signal has the FFT --> iFFT coefficients
 
   // Copy device memory to host
   checkCudaErrors(cudaMemcpy(h_signal_fft_ifft, d_signal, mem_size,
                              cudaMemcpyDeviceToHost));
+  //h_signal has the original coefficients
+  //h_signal_fft_ifft has the FFT --> iFFT coefficients
+
   // check result
   int iTestResult = 0;
 
-  //result scaling 
-  for (int i = 0; i < SIGNAL_SIZE; ++i) {
-      h_signal_fft_ifft[i] = { h_signal_fft_ifft[i].real() / 8.0f / SIGNAL_SIZE, 0 };
-  }
+  //result scaling
+  addjustCoefficientMagnitude(h_signal_fft_ifft, SIGNAL_SIZE);
 
-  for (int i = 0; i < SIGNAL_SIZE; ++i) {
-      if ( std::abs(h_signal_fft_ifft[i].real() - h_signal[i].real()) > 1e-3f)
-          iTestResult += 1;
-  }
+  iTestResult = isOriginalEqualToTheTransformedAndInverseTransformenData(h_signal, h_signal_fft_ifft, SIGNAL_SIZE);
 
-  std::cout << "The first 10 real values: ";
-  for (int i = 0; i < 10; ++i) {
-      std::cout << h_signal[i].real() << " ";
-  }
-  std::cout << std::endl;
+  printTheData(h_signal, h_signal_fft_ifft, 10);
 
   // Destroy CUFFT context
   checkCudaErrors(cufftDestroy(plan));
@@ -132,4 +130,35 @@ void runTest(int argc, char **argv) {
   checkCudaErrors(cudaFree(d_signal));
 
   exit((iTestResult == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
+}
+
+void addjustCoefficientMagnitude(Complex* h_data, size_t dataSize)
+{
+    for (size_t i = 0; i < dataSize; ++i) {
+        h_data[i] = { h_data[i].real() / 8.0f / dataSize, 0 };
+    }
+}
+
+int isOriginalEqualToTheTransformedAndInverseTransformenData(
+    const Complex* original, const Complex* transformed, size_t dataSize)
+{
+    int iTestResult = 0;
+    for (int i = 0; i < dataSize; ++i) {
+        if (std::abs(transformed[i].real() - original[i].real()) > abs(original[i].real() * 1e-5f))
+            iTestResult += 1;
+    }
+    return iTestResult;
+}
+
+void printTheData(const Complex* original, const Complex* transformed, size_t dataSize)
+{
+    std::cout << "The first " << dataSize << " real values:" << std::endl;
+    for (int i = 0; i < dataSize; ++i) {
+        std::cout << original[i].real() << " ";
+    }
+    std::cout << std::endl;
+    for (int i = 0; i < dataSize; ++i) {
+        std::cout << transformed[i].real() << " ";
+    }
+    std::cout << std::endl;
 }

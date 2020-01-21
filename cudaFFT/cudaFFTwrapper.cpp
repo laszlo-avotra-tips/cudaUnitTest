@@ -8,7 +8,7 @@
 // Complex data type
 using Complex = std::complex<float>;
 
-void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, const long dataSize)
+void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, const long dataSize, const int batch)
 {
     const long mem_size = sizeof(Complex) * dataSize;
 
@@ -28,7 +28,7 @@ void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_
         checkCudaErrors(cudaMemcpy(d_signal, h_signal, mem_size, cudaMemcpyHostToDevice));
 
         // CUFFT plan simple API
-        checkCudaErrors(cufftPlan1d(&plan, mem_size, CUFFT_C2C, 1));
+        checkCudaErrors(cufftPlan1d(&plan, mem_size, CUFFT_C2C, batch));
 
         // Transform signal and kernel
         //std::cout << "Transforming signal cufftExecC2" << std::endl;

@@ -16,11 +16,12 @@
 #include <iostream>
 #include <memory>
 
+
 #include <cudaFFTwrapper.h>
 
 #ifndef __CUDACC__ //this not functional it only silences the editor warnigs
 struct dim3 {
-    dim3(int x_, int y_, int z_) :x(x_), y(y_), z(z_) {}
+    dim3(int x_, int y_, int z_) noexcept : x(x_), y(y_), z(z_)  {}
     int x;
     int y;
     int z;
@@ -50,11 +51,10 @@ int main(int argc, char **argv) {
 //! Run a simple test for CUDA
 ////////////////////////////////////////////////////////////////////////////////
 void runTest(int argc, char **argv) {
+
   std::cout << "[cudaFFT] is starting..." << std::endl;
 
-  /*findCudaDevice(argc, (const char **)argv);*/
-
-  const long SIGNAL_SIZE(256);
+  constexpr long SIGNAL_SIZE(256);
 
   // Allocate host memory for the signal
   auto h_signal = std::move(std::make_unique<std::complex<float>[]>(SIGNAL_SIZE));
@@ -79,6 +79,7 @@ void runTest(int argc, char **argv) {
 
 void addjustCoefficientMagnitude(Complex* h_data, long dataSize) noexcept
 {
+
     if (h_data) {
         for (long i = 0; i < dataSize; ++i) {
             h_data[i] = { h_data[i].real() / 8.0f / dataSize, 0 };
@@ -126,5 +127,3 @@ void initializeTheSignals(Complex* fft, Complex* invfft, long dataSize) noexcept
             invfft[i] = { float(i), 1000.f * i };
     }
 }
-
-

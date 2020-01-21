@@ -8,9 +8,9 @@
 // Complex data type
 using Complex = std::complex<float>;
 
-void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, const size_t dataSize)
+void ComputeTheFFT(const std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, const long dataSize)
 {
-    const int mem_size = int(sizeof(Complex) * dataSize);
+    const long mem_size = sizeof(Complex) * dataSize;
 
     Complex* d_signal{ nullptr };
     cufftHandle plan{ -1 };

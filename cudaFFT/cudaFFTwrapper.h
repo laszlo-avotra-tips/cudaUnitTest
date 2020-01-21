@@ -2,4 +2,4 @@
 
 #include <complex>
 
-void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, const size_t dataSize);
+void ComputeTheFFT(const std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, const long dataSize);

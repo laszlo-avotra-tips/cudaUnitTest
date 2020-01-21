@@ -43,6 +43,8 @@ int isOriginalEqualToTheTransformedAndInverseTransformenData(
     const Complex* original, const Complex* transformed, size_t dataSize);
 void printTheData(const Complex* original, const Complex* transformed, size_t dataSize);
 void initializeTheSignals(Complex* fft, Complex* invfft, size_t dataSize);
+void ComputeTheFFT(Complex* h_signal, Complex* h_signal_fft_ifft, size_t dataSize);
+
 
 //// The filter size is assumed to be a number smaller than the signal size
 
@@ -67,51 +69,8 @@ void runTest(int argc, char **argv) {
   Complex* h_signal = new Complex[SIGNAL_SIZE];
   Complex* h_signal_fft_ifft = new Complex[SIGNAL_SIZE];
   initializeTheSignals(h_signal, h_signal_fft_ifft, SIGNAL_SIZE);
-
-  {
-      int mem_size = sizeof(Complex) * SIGNAL_SIZE;
-
-      // Allocate device memory for signal
-      Complex* d_signal{ nullptr };
-      checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&d_signal), mem_size));
-
-      // Copy host memory to device
-      checkCudaErrors(cudaMemcpy(d_signal, h_signal, mem_size, cudaMemcpyHostToDevice));
-
-      // CUFFT plan simple API
-      cufftHandle plan;
-      checkCudaErrors(cufftPlan1d(&plan, mem_size, CUFFT_C2C, 1));
-
-      // Transform signal and kernel
-      std::cout << "Transforming signal cufftExecC2" << std::endl;
-      checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
-          reinterpret_cast<cufftComplex*>(d_signal),
-          CUFFT_FORWARD));
-      //h_signal has the original coefficients
-      //d_signal has the direct FFT coefficients
-
-      // Check if kernel execution generated and error
-      getLastCudaError("Kernel execution failed [ ComplexPointwiseMulAndScale ]");
-      // Transform signal back
-      std::cout << "Transforming signal back cufftExecC2C" << std::endl;
-
-      checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
-          reinterpret_cast<cufftComplex*>(d_signal),
-          CUFFT_INVERSE));
-      //h_signal has the original coefficients
-      //d_signal has the FFT --> iFFT coefficients
-
-      // Copy device memory to host
-      checkCudaErrors(cudaMemcpy(h_signal_fft_ifft, d_signal, mem_size,
-          cudaMemcpyDeviceToHost));
-      //h_signal has the original coefficients
-      //h_signal_fft_ifft has the FFT --> iFFT coefficients
-
-      // Destroy CUFFT context
-      checkCudaErrors(cufftDestroy(plan));
-
-      checkCudaErrors(cudaFree(d_signal));
-  }
+  
+  ComputeTheFFT(h_signal, h_signal_fft_ifft, SIGNAL_SIZE);
 
   // check result
   int iTestResult = 0;
@@ -168,5 +127,58 @@ void initializeTheSignals(Complex* fft, Complex* invfft, size_t dataSize)
         fft[i] = { rand() / static_cast<float>(RAND_MAX), 0 };
         invfft[i] = { float(i), 1000.f * i };
     }
+}
+
+void ComputeTheFFT(Complex* h_signal, Complex* h_signal_fft_ifft, size_t dataSize)
+{
+   int mem_size = sizeof(Complex) * dataSize;
+
+   Complex* d_signal{ nullptr };
+   cufftHandle plan;
+   
+   // Allocate device memory for signal
+   checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&d_signal), mem_size));
+   
+   if (h_signal) {
+
+        // Copy host memory to device
+        checkCudaErrors(cudaMemcpy(d_signal, h_signal, mem_size, cudaMemcpyHostToDevice));
+
+        // CUFFT plan simple API
+        checkCudaErrors(cufftPlan1d(&plan, mem_size, CUFFT_C2C, 1));
+
+        // Transform signal and kernel
+        std::cout << "Transforming signal cufftExecC2" << std::endl;
+        checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
+            reinterpret_cast<cufftComplex*>(d_signal),
+            CUFFT_FORWARD));
+        //h_signal has the original coefficients
+        //d_signal has the direct FFT coefficients
+
+        // Check if kernel execution generated and error
+        getLastCudaError("Kernel execution failed [ ComplexPointwiseMulAndScale ]");
+    }
+
+    if (h_signal_fft_ifft) {
+        // Transform signal back
+        std::cout << "Transforming signal back cufftExecC2C" << std::endl;
+
+        checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
+            reinterpret_cast<cufftComplex*>(d_signal),
+            CUFFT_INVERSE));
+        //h_signal has the original coefficients
+        //d_signal has the FFT --> iFFT coefficients
+
+        // Copy device memory to host
+        checkCudaErrors(cudaMemcpy(h_signal_fft_ifft, d_signal, mem_size,
+            cudaMemcpyDeviceToHost));
+        //h_signal has the original coefficients
+        //h_signal_fft_ifft has the FFT --> iFFT coefficients
+    }
+
+    // Destroy CUFFT context
+    checkCudaErrors(cufftDestroy(plan));
+
+    checkCudaErrors(cudaFree(d_signal));
 }
 

@@ -9,19 +9,19 @@
  *
  */
 
-/* Example showing the use of CUFFT for fast 1D-convolution using FFT. */
+ /* Example showing the use of CUFFT for fast 1D-convolution using FFT. */
 
-// includes, system
+ // includes, system
 #include <algorithm>
 #include <iostream>
 #include <memory>
 
 
-#include <cudaFFTwrapper.h>
+#include "../../cudaFFT/cudaFFTwrapper.h"
 
-#ifndef __CUDACC__ //this not functional it only silences the editor warnigs
+#ifndef __CUDACC__ //this not functional it only silences IntelliSense
 struct dim3 {
-    dim3(int x_, int y_, int z_) noexcept : x(x_), y(y_), z(z_)  {}
+    dim3(int x_, int y_, int z_) noexcept : x(x_), y(y_), z(z_) {}
     int x;
     int y;
     int z;
@@ -33,7 +33,7 @@ using Complex = std::complex<float>;
 
 ////////////////////////////////////////////////////////////////////////////////
 // declaration, forward
-void runTest(int argc, char **argv);
+void runTest(int argc, char** argv);
 void addjustCoefficientMagnitude(Complex* h_data, long dataSize) noexcept;
 int isOriginalEqualToTheTransformedAndInverseTransformenData(
     const Complex* original, const Complex* transformed, long dataSize) noexcept;
@@ -43,38 +43,38 @@ void initializeTheSignals(Complex* fft, Complex* invfft, long dataSize) noexcept
 ////////////////////////////////////////////////////////////////////////////////
 // Program main
 ////////////////////////////////////////////////////////////////////////////////
-int main(int argc, char **argv) { 
-    runTest(argc, argv); 
+int main(int argc, char** argv) {
+    runTest(argc, argv);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 //! Run a simple test for CUDA
 ////////////////////////////////////////////////////////////////////////////////
-void runTest(int argc, char **argv) {
+void runTest(int argc, char** argv) {
 
-  std::cout << "[cudaFFT] is starting..." << std::endl;
+    std::cout << "[cudaFFT] is starting..." << std::endl;
 
-  constexpr long SIGNAL_SIZE(256);
+    constexpr long SIGNAL_SIZE(256);
 
-  // Allocate host memory for the signal
-  auto h_signal = std::move(std::make_unique<std::complex<float>[]>(SIGNAL_SIZE));
-  auto h_signal_fft_ifft = std::move(std::make_unique<std::complex<float>[]>(SIGNAL_SIZE));
-  
-  initializeTheSignals(h_signal.get(), h_signal_fft_ifft.get(), SIGNAL_SIZE);
-  
-  ComputeTheFFT(h_signal.get(), h_signal_fft_ifft.get(), SIGNAL_SIZE);
+    // Allocate host memory for the signal
+    auto h_signal = std::move(std::make_unique<std::complex<float>[]>(SIGNAL_SIZE));
+    auto h_signal_fft_ifft = std::move(std::make_unique<std::complex<float>[]>(SIGNAL_SIZE));
 
-  // check result
-  int iTestResult = 0;
+    initializeTheSignals(h_signal.get(), h_signal_fft_ifft.get(), SIGNAL_SIZE);
 
-  //result scaling
-  addjustCoefficientMagnitude(h_signal_fft_ifft.get(), SIGNAL_SIZE);
+    ComputeTheFFT(h_signal.get(), h_signal_fft_ifft.get(), SIGNAL_SIZE);
 
-  iTestResult = isOriginalEqualToTheTransformedAndInverseTransformenData(h_signal.get(), h_signal_fft_ifft.get(), SIGNAL_SIZE);
+    // check result
+    int iTestResult = 0;
 
-  printTheData(h_signal.get(), h_signal_fft_ifft.get(), 10);
+    //result scaling
+    addjustCoefficientMagnitude(h_signal_fft_ifft.get(), SIGNAL_SIZE);
 
-  exit((iTestResult == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
+    iTestResult = isOriginalEqualToTheTransformedAndInverseTransformenData(h_signal.get(), h_signal_fft_ifft.get(), SIGNAL_SIZE);
+
+    printTheData(h_signal.get(), h_signal_fft_ifft.get(), 10);
+
+    exit((iTestResult == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 void addjustCoefficientMagnitude(Complex* h_data, long dataSize) noexcept
@@ -121,9 +121,9 @@ void printTheData(const Complex* original, const Complex* transformed, long data
 void initializeTheSignals(Complex* fft, Complex* invfft, long dataSize) noexcept
 {
     for (long i = 0; i < dataSize; ++i) {
-        if(fft)
+        if (fft)
             fft[i] = { rand() / static_cast<float>(RAND_MAX), 0 };
-        if(invfft)
+        if (invfft)
             invfft[i] = { float(i), 1000.f * i };
     }
 }

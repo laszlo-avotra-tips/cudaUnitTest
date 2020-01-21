@@ -15,7 +15,6 @@
 #include <algorithm>
 #include <iostream>
 #include <complex>
-#include <vector>
 
 // includes, project
 #include <cuda_runtime.h>
@@ -33,7 +32,6 @@ struct dim3 {
 
 // Complex data type
 using Complex = std::complex<float>;
-using ComplexVector = std::vector<Complex>;
 
 ////////////////////////////////////////////////////////////////////////////////
 // declaration, forward
@@ -43,7 +41,7 @@ int isOriginalEqualToTheTransformedAndInverseTransformenData(
     const Complex* original, const Complex* transformed, size_t dataSize);
 void printTheData(const Complex* original, const Complex* transformed, size_t dataSize);
 void initializeTheSignals(Complex* fft, Complex* invfft, size_t dataSize);
-void ComputeTheFFT(Complex* h_signal, Complex* h_signal_fft_ifft, size_t dataSize);
+void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, const size_t dataSize);
 
 
 //// The filter size is assumed to be a number smaller than the signal size
@@ -129,9 +127,9 @@ void initializeTheSignals(Complex* fft, Complex* invfft, size_t dataSize)
     }
 }
 
-void ComputeTheFFT(Complex* h_signal, Complex* h_signal_fft_ifft, size_t dataSize)
+void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, const size_t dataSize)
 {
-   int mem_size = sizeof(Complex) * dataSize;
+   const int mem_size = int(sizeof(Complex) * dataSize);
 
    Complex* d_signal{ nullptr };
    cufftHandle plan;

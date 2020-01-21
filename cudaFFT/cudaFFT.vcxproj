@@ -100,6 +100,12 @@
   <ItemGroup>
     <CudaCompile Include="cudaFFT.cu" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cudaFFTwrapper.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="cudaFFTwrapper.cpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(CUDAPropsPath)\CUDA 10.2.targets" />

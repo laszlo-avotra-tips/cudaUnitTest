@@ -35,6 +35,9 @@ void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_
         checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
             reinterpret_cast<cufftComplex*>(d_signal),
             CUFFT_FORWARD));
+        
+        cudaDeviceSynchronize();
+
         //h_signal has the original coefficients
         //d_signal has the direct FFT coefficients
 
@@ -57,6 +60,8 @@ void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_
             cudaMemcpyDeviceToHost));
         //h_signal has the original coefficients
         //h_signal_fft_ifft has the FFT --> iFFT coefficients
+        cudaDeviceSynchronize();
+
     }
 
     // Destroy CUFFT context
@@ -79,10 +84,13 @@ int isOriginalEqualToTheTransformedAndInverseTransformenData(
 {
     int iTestResult = 0;
     if (original && transformed) {
-        iTestResult = 0;
         for (int i = 0; i < dataSize; ++i) {
-            if (std::abs(transformed[i].real() - original[i].real()) > abs(original[i].real() * 1e-4f))
+            float e = transformed[i].real() - original[i].real();
+            //float e = std::abs(transformed[i].real() / original[i].real()) - 1.0;
+            if ( std::abs(e) >  1e-5f) {
                 iTestResult += 1;
+                printf("iTestesult=%d , i=%d, o=%f, t=%f e=%f\n\r", iTestResult, i, original[i].real(), transformed[i].real(), e);
+            }
         }
     }
     return iTestResult;

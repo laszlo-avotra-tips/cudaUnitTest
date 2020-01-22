@@ -48,25 +48,33 @@ void runTest(int argc, char** argv) {
 
     std::cout << "[cudaFFT] is starting..." << std::endl;
 
-    constexpr long SIGNAL_SIZE(256);
+    constexpr int fftSize(2048);
+    constexpr int batchSize(16);
+
+    constexpr long SIGNAL_SIZE(fftSize*batchSize);
 
     // Allocate host memory for the signal
     auto h_signal = std::make_unique<std::complex<float>[]>(SIGNAL_SIZE);
     auto h_signal_fft_ifft = std::make_unique<std::complex<float>[]>(SIGNAL_SIZE);
 
-    initializeTheSignals(h_signal.get(), SIGNAL_SIZE);
+    auto pHs = h_signal.get();
+    auto pHt = h_signal_fft_ifft.get();
 
-    ComputeTheFFT(h_signal.get(), h_signal_fft_ifft.get(), SIGNAL_SIZE);
+    initializeTheSignals(pHs, SIGNAL_SIZE);
+
+    ComputeTheFFT(pHs, pHt, SIGNAL_SIZE);
 
     // check result
     int iTestResult = 0;
 
     //result scaling
-    addjustCoefficientMagnitude(h_signal_fft_ifft.get(), SIGNAL_SIZE);
+    addjustCoefficientMagnitude(pHt, SIGNAL_SIZE);
 
-    iTestResult = isOriginalEqualToTheTransformedAndInverseTransformenData(h_signal.get(), h_signal_fft_ifft.get(), SIGNAL_SIZE);
+    iTestResult = isOriginalEqualToTheTransformedAndInverseTransformenData(pHs, pHt, SIGNAL_SIZE);
 
-    printTheData(h_signal.get(), h_signal_fft_ifft.get(), 10);
+    printf("iTestResult: %d\n\r", iTestResult);
+
+    printTheData(pHs, pHt, 8, 0);
 
     exit((iTestResult == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
 }

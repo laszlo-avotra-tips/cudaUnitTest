@@ -5,19 +5,12 @@
 #include <helper_cuda.h>
 #include <stdint.h>
 #include <memory>
+#include <iostream>
 
 
 // Complex data type
 using Complex = std::complex<float>;
 
-void ComputeTheFFT(Complex* dataOut, const uint16_t* dataIn, std::complex<float>* h_signal_fft_ifft, const long dataSize, const int batch)
-{
-    for (long i = 0; i < dataSize; ++i) {
-        dataOut[i] = Complex(dataIn[i], 0.0f);
-    }
-
-    ComputeTheFFT(dataOut, nullptr, dataSize, batch);
-}
 
 void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, const long dataSize, const int batch)
 {
@@ -74,4 +67,84 @@ void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_
     checkCudaErrors(cufftDestroy(plan));
 
     checkCudaErrors(cudaFree(d_signal));
+}
+void addjustCoefficientMagnitude(std::complex<float>* h_data, long dataSize) noexcept
+{
+
+    if (h_data) {
+        for (long i = 0; i < dataSize; ++i) {
+            h_data[i] = { h_data[i].real() / 8.0f / dataSize, 0 };
+        }
+    }
+}
+
+int isOriginalEqualToTheTransformedAndInverseTransformenData(
+    const std::complex<float>* original, const std::complex<float>* transformed, long dataSize) noexcept
+{
+    int iTestResult = 0;
+    if (original && transformed) {
+        iTestResult = 0;
+        for (int i = 0; i < dataSize; ++i) {
+            if (std::abs(transformed[i].real() - original[i].real()) > abs(original[i].real() * 1e-4f))
+                iTestResult += 1;
+        }
+    }
+    return iTestResult;
+}
+
+//int isOriginalEqualToTheTransformedAndInverseTransformenData(
+//    const std::complex<float>* original, std::complex<float>* transformed, long dataSize) noexcept
+//{
+//    int iTestResult = 1;
+//    if (original && transformed) {
+//        iTestResult = 0;
+//        for (int i = 0; i < dataSize; ++i) {
+//            if (std::abs(transformed[i].real() - original[i].real()) > abs(original[i].real() * 1e-5f))
+//                iTestResult += 1;
+//        }
+//    }
+//    return iTestResult;
+//}
+
+//void printTheData(const std::complex<float>* original, const std::complex<float>* transformed, long dataSize)
+//{
+//    std::cout << "The first " << dataSize << " real values:" << std::endl;
+//    if (original) {
+//        for (int i = 0; i < dataSize; ++i) {
+//            std::cout << original[i].real() << " ";
+//        }
+//        std::cout << std::endl;
+//    }
+//    if (transformed) {
+//        for (int i = 0; i < dataSize; ++i) {
+//            std::cout << transformed[i].real() << " ";
+//        }
+//        std::cout << std::endl;
+//    }
+//}
+
+void printTheData(const std::complex<float>* original, const std::complex<float>* transformed, long dataSize, const int printOffset)
+{
+    std::cout << "The first " << dataSize << " real values with offset [" << printOffset << "] :" << std::endl;
+    if (original) {
+        for (int i = 0; i < dataSize; ++i) {
+            std::cout << original[i + printOffset].real() << " ";
+        }
+        std::cout << std::endl;
+    }
+    if (transformed) {
+        for (int i = 0; i < dataSize; ++i) {
+            std::cout << transformed[i + printOffset].real() << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+
+void initializeTheSignals(std::complex<float>* fft, long dataSize) noexcept
+{
+    for (long i = 0; i < dataSize; ++i) {
+        if (fft)
+            fft[i] = { rand() / static_cast<float>(RAND_MAX), 0 };
+    }
 }

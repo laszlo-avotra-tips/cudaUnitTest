@@ -8,15 +8,11 @@
 #include <iostream>
 
 
-// Complex data type
-using Complex = std::complex<float>;
-
-
 void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, const long dataSize, const int batch)
 {
-    const long mem_size = sizeof(Complex) * dataSize;
+    const long mem_size = sizeof(std::complex<float>) * dataSize;
 
-    Complex* d_signal{ nullptr };
+    std::complex<float>* d_signal{ nullptr };
     cufftHandle plan{ -1 };
 
     const char* argv{ "test" };
@@ -91,37 +87,6 @@ int isOriginalEqualToTheTransformedAndInverseTransformenData(
     }
     return iTestResult;
 }
-
-//int isOriginalEqualToTheTransformedAndInverseTransformenData(
-//    const std::complex<float>* original, std::complex<float>* transformed, long dataSize) noexcept
-//{
-//    int iTestResult = 1;
-//    if (original && transformed) {
-//        iTestResult = 0;
-//        for (int i = 0; i < dataSize; ++i) {
-//            if (std::abs(transformed[i].real() - original[i].real()) > abs(original[i].real() * 1e-5f))
-//                iTestResult += 1;
-//        }
-//    }
-//    return iTestResult;
-//}
-
-//void printTheData(const std::complex<float>* original, const std::complex<float>* transformed, long dataSize)
-//{
-//    std::cout << "The first " << dataSize << " real values:" << std::endl;
-//    if (original) {
-//        for (int i = 0; i < dataSize; ++i) {
-//            std::cout << original[i].real() << " ";
-//        }
-//        std::cout << std::endl;
-//    }
-//    if (transformed) {
-//        for (int i = 0; i < dataSize; ++i) {
-//            std::cout << transformed[i].real() << " ";
-//        }
-//        std::cout << std::endl;
-//    }
-//}
 
 void printTheData(const std::complex<float>* original, const std::complex<float>* transformed, long dataSize, const int printOffset)
 {

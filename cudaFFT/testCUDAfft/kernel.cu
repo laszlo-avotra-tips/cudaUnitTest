@@ -29,7 +29,6 @@ struct dim3 {
 #endif
 
 // Complex data type
-//using Complex = std::complex<float>;
 
 ////////////////////////////////////////////////////////////////////////////////
 // declaration, forward
@@ -71,52 +70,3 @@ void runTest(int argc, char** argv) {
 
     exit((iTestResult == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
-
-//void addjustCoefficientMagnitude(std::complex<float>* h_data, long dataSize) noexcept
-//{
-//
-//    if (h_data) {
-//        for (long i = 0; i < dataSize; ++i) {
-//            h_data[i] = { h_data[i].real() / 8.0f / dataSize, 0 };
-//        }
-//    }
-//}
-//
-//int isOriginalEqualToTheTransformedAndInverseTransformenData(
-//    const std::complex<float>* original, std::complex<float>* transformed, long dataSize) noexcept
-//{
-//    int iTestResult = 1;
-//    if (original && transformed) {
-//        iTestResult = 0;
-//        for (int i = 0; i < dataSize; ++i) {
-//            if (std::abs(transformed[i].real() - original[i].real()) > abs(original[i].real() * 1e-5f))
-//                iTestResult += 1;
-//        }
-//    }
-//    return iTestResult;
-//}
-//
-//void printTheData(const std::complex<float>* original, const std::complex<float>* transformed, long dataSize)
-//{
-//    std::cout << "The first " << dataSize << " real values:" << std::endl;
-//    if (original) {
-//        for (int i = 0; i < dataSize; ++i) {
-//            std::cout << original[i].real() << " ";
-//        }
-//        std::cout << std::endl;
-//    }
-//    if (transformed) {
-//        for (int i = 0; i < dataSize; ++i) {
-//            std::cout << transformed[i].real() << " ";
-//        }
-//        std::cout << std::endl;
-//    }
-//}
-//
-//void initializeTheSignals(std::complex<float>* fft, long dataSize) noexcept
-//{
-//    for (long i = 0; i < dataSize; ++i) {
-//        if (fft)
-//            fft[i] = { rand() / static_cast<float>(RAND_MAX), 0 };
-//    }
-//}

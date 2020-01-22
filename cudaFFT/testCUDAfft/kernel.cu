@@ -57,8 +57,8 @@ void runTest(int argc, char** argv) {
     constexpr long SIGNAL_SIZE(256);
 
     // Allocate host memory for the signal
-    auto h_signal = std::move(std::make_unique<std::complex<float>[]>(SIGNAL_SIZE));
-    auto h_signal_fft_ifft = std::move(std::make_unique<std::complex<float>[]>(SIGNAL_SIZE));
+    auto h_signal = std::make_unique<std::complex<float>[]>(SIGNAL_SIZE);
+    auto h_signal_fft_ifft = std::make_unique<std::complex<float>[]>(SIGNAL_SIZE);
 
     initializeTheSignals(h_signal.get(), h_signal_fft_ifft.get(), SIGNAL_SIZE);
 

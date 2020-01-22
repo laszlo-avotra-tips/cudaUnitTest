@@ -3,10 +3,21 @@
 #include <cuda_runtime.h>
 #include <cufft.h>
 #include <helper_cuda.h>
+#include <stdint.h>
+#include <memory>
 
 
 // Complex data type
 using Complex = std::complex<float>;
+
+void ComputeTheFFT(Complex* dataOut, const uint16_t* dataIn, std::complex<float>* h_signal_fft_ifft, const long dataSize, const int batch)
+{
+    for (long i = 0; i < dataSize; ++i) {
+        dataOut[i] = Complex(dataIn[i], 0.0f);
+    }
+
+    ComputeTheFFT(dataOut, nullptr, dataSize, batch);
+}
 
 void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, const long dataSize, const int batch)
 {

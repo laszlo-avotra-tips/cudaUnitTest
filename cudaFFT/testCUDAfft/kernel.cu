@@ -49,7 +49,7 @@ void runTest(int argc, char** argv) {
     std::cout << "[cudaFFT] is starting..." << std::endl;
 
     constexpr int fftSize(2048);
-    constexpr int batchSize(16);
+    constexpr int batchSize(592);
 
     constexpr long SIGNAL_SIZE(fftSize*batchSize);
 
@@ -58,7 +58,7 @@ void runTest(int argc, char** argv) {
     auto h_signal_fft_ifft = std::make_unique<std::complex<float>[]>(SIGNAL_SIZE);
 
     auto pHs = h_signal.get();
-    auto pHt = h_signal_fft_ifft.get();
+    auto pHt = nullptr; //h_signal_fft_ifft.get();
 
     initializeTheSignals(pHs, SIGNAL_SIZE);
 
@@ -74,7 +74,7 @@ void runTest(int argc, char** argv) {
 
     printf("iTestResult: %d\n\r", iTestResult);
 
-    printTheData(pHs, pHt, 8, 0);
+    printTheData(pHs, pHt, 8, fftSize * batchSize - 9);
 
     exit((iTestResult == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
 }

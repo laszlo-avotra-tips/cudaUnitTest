@@ -10,7 +10,7 @@
 void checkGpuMem()
 
 {
-
+    return;
     double free_m, total_m, used_m;
 
     size_t free_t, total_t;
@@ -54,7 +54,6 @@ void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_
         checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
             reinterpret_cast<cufftComplex*>(d_signal),
             CUFFT_FORWARD));       
-        //cudaDeviceSynchronize();
 
         //h_signal has the original coefficients
         //d_signal has the direct FFT coefficients
@@ -66,12 +65,14 @@ void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_
         // Transform signal back
         //std::cout << "Transforming signal back cufftExecC2C" << std::endl;
 
+        cudaDeviceSynchronize();
+
         checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
             reinterpret_cast<cufftComplex*>(d_signal),
             CUFFT_INVERSE));
         //h_signal has the original coefficients
         //d_signal has the FFT --> iFFT coefficients
-        cudaDeviceSynchronize();
+        //cudaDeviceSynchronize();
 
         // Copy device memory to host
         checkCudaErrors(cudaMemcpy(h_signal_fft_ifft, d_signal, mem_size,
@@ -81,18 +82,8 @@ void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_
 
     }
     checkGpuMem();
-    //cudaDeviceSynchronize();
-
-    //// Destroy CUFFT context
-    //checkCudaErrors(cufftDestroy(plan));
-    ////cudaDeviceSynchronize();
-
-    //checkCudaErrors(cudaFree(d_signal));
-    ////cudaDeviceSynchronize();
 
     cudaDeviceReset();
-
-    //checkGpuMem();
 }
 void addjustCoefficientMagnitude(std::complex<float>* h_data, long dataSize) noexcept
 {

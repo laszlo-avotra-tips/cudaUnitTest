@@ -49,7 +49,7 @@ void runTest(int argc, char** argv) {
     std::cout << "[cudaFFT] is starting..." << std::endl;
 
     constexpr int fftSize(2048);
-    constexpr int batchSize(592);
+    constexpr int batchSize(160);
 
     constexpr long SIGNAL_SIZE(fftSize*batchSize);
 
@@ -62,7 +62,7 @@ void runTest(int argc, char** argv) {
 
     initializeTheSignals(pHs, SIGNAL_SIZE);
 
-    ComputeTheFFT(pHs, pHt, SIGNAL_SIZE);
+    ComputeTheFFT(pHs, pHt, SIGNAL_SIZE, batchSize);
 
     // check result
     int iTestResult = 0;

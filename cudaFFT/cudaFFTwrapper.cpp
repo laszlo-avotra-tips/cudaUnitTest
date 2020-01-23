@@ -10,7 +10,6 @@
 void checkGpuMem()
 
 {
-    return;
     double free_m, total_m, used_m;
 
     size_t free_t, total_t;

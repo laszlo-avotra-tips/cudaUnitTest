@@ -35,33 +35,33 @@ void runTest(int argc, char** argv) {
     std::cout << "[cudaFFT] is starting..." << std::endl;
 
     constexpr int fftSize(2048);
-    constexpr int batchSize(160);
+    constexpr int batchSize(592);
 
-    constexpr long SIGNAL_SIZE(fftSize*batchSize);
+    constexpr long dataSize(fftSize*batchSize);
 
     // Allocate host memory for the signal
-    auto h_signal = std::make_unique<std::complex<float>[]>(SIGNAL_SIZE);
-    auto h_signal_fft_ifft = std::make_unique<std::complex<float>[]>(SIGNAL_SIZE);
+    auto h_signalIn = std::make_unique<std::complex<float>[]>(dataSize);
+    auto h_signalOut = std::make_unique<std::complex<float>[]>(dataSize);
 
-    auto pHs = h_signal.get();
-    auto pHt = nullptr; // h_signal_fft_ifft.get();
+    auto pHin = h_signalIn.get();
+    auto pHout = h_signalOut.get();
 
-    initializeTheSignals(pHs, SIGNAL_SIZE);
+    initializeTheSignals(pHin, dataSize);
 
-    ComputeTheFFT(pHs, pHt, fftSize, batchSize);
+    ComputeTheFFT(pHout, pHin, fftSize, batchSize);
     //ComputeTheFFTdev(pHs, pHt, SIGNAL_SIZE, batchSize);
 
     // check result
+
     int iTestResult = 0;
 
     //result scaling
-    addjustCoefficientMagnitude(pHt, SIGNAL_SIZE);
-
-    //iTestResult = isOriginalEqualToTheTransformedAndInverseTransformenData(pHs, pHt, SIGNAL_SIZE);
+    addjustCoefficientMagnitude(pHout, dataSize);
 
     printf("iTestResult: %d\n\r", iTestResult);
 
-    printTheData(pHs, pHt, 8, fftSize * batchSize - 9);
+    printTheData(pHin, pHout, 8, fftSize * batchSize - 8);
+//    printTheData(pHin, pHout, 8, 0);
 
     exit((iTestResult == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
 }

@@ -27,29 +27,29 @@ double checkGpuMem()
     return free_m;
 }
 
-void ComputeTheFFT(std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, size_t fftSize, size_t batch)
+void ComputeTheFFT(std::complex<float>* h_signalOut, const std::complex<float>* h_signalIn, size_t fftSize, int batch)
 {
-    const size_t workBatch{ 160 };
+    const size_t workBatch{ 1024 };
     const size_t workFftSize{ 2048 };
     const size_t workDataSize{ workBatch * workFftSize };
 
     const size_t totalDataSize{ fftSize * batch };
 
     if ((fftSize <= workFftSize) && (batch <= 16)) {
-        ComputeTheFFTdev(h_signal, h_signal_fft_ifft, totalDataSize, batch);
+        ComputeTheFFTdev(h_signalOut, h_signalIn, totalDataSize, batch);
     }
 
     else if ((fftSize <= workFftSize) && (batch <= workBatch)) {
-        ComputeTheFFTdev(h_signal, nullptr, totalDataSize, batch);
+        ComputeTheFFTdev(h_signalOut, h_signalIn, totalDataSize, batch);
     }
     else {
         for (size_t i = fftSize * batch - 9; i < fftSize * batch; ++i) {
-            h_signal[i] = { -1234.0f, 0 };
+            h_signalOut[i] = { -1234.0f, 0 };
         }
     }
 }
 
-double ComputeTheFFTdev(std::complex<float>* h_signal, std::complex<float>* h_signal_fft_ifft, size_t dataSize, size_t batch)
+double ComputeTheFFTdev(std::complex<float>* h_signalOut, const std::complex<float>* h_signalIn, size_t dataSize, int batch)
 {
     double freeMem{ -1 };
     const size_t mem_size = sizeof(std::complex<float>) * dataSize;
@@ -63,47 +63,50 @@ double ComputeTheFFTdev(std::complex<float>* h_signal, std::complex<float>* h_si
     checkGpuMem();
     // Allocate device memory for signal
     checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&d_signal), mem_size));
+
     checkGpuMem();
-    if (h_signal) {
+    if (h_signalIn) {
 
         // Copy host memory to device
-        checkCudaErrors(cudaMemcpy(d_signal, reinterpret_cast<cufftComplex*>(h_signal), mem_size, cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpy(d_signal, h_signalIn, mem_size, cudaMemcpyHostToDevice));
 
         // CUFFT plan simple API
-        checkCudaErrors(cufftPlan1d(&plan, mem_size, CUFFT_C2C, batch));
+        checkCudaErrors(cufftPlan1d(&plan, 2048, CUFFT_C2C, batch));
 
         // Transform signal and kernel
         //std::cout << "Transforming signal cufftExecC2" << std::endl;
-        checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
-            reinterpret_cast<cufftComplex*>(d_signal),
-            CUFFT_FORWARD));       
+        checkCudaErrors(cufftExecC2C(plan, d_signal, d_signal, CUFFT_FORWARD));
 
         //h_signal has the original coefficients
         //d_signal has the direct FFT coefficients
+        // Copy host memory to device
+        if (h_signalOut) {
+            checkCudaErrors(cudaMemcpy(h_signalOut, d_signal, mem_size, cudaMemcpyDeviceToHost));
+        }
 
         // Check if kernel execution generated and error
     }
 
-    if (h_signal_fft_ifft) {
-        // Transform signal back
-        //std::cout << "Transforming signal back cufftExecC2C" << std::endl;
+    //if (h_signal_fft_ifft) {
+    //    // Transform signal back
+    //    //std::cout << "Transforming signal back cufftExecC2C" << std::endl;
 
-        cudaDeviceSynchronize();
+    //    cudaDeviceSynchronize();
 
-        checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
-            reinterpret_cast<cufftComplex*>(d_signal),
-            CUFFT_INVERSE));
-        //h_signal has the original coefficients
-        //d_signal has the FFT --> iFFT coefficients
-        //cudaDeviceSynchronize();
+    //    checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
+    //        reinterpret_cast<cufftComplex*>(d_signal),
+    //        CUFFT_INVERSE));
+    //    //h_signal has the original coefficients
+    //    //d_signal has the FFT --> iFFT coefficients
+    //    //cudaDeviceSynchronize();
 
-        // Copy device memory to host
-        checkCudaErrors(cudaMemcpy(h_signal_fft_ifft, d_signal, mem_size,
-            cudaMemcpyDeviceToHost));
-        //h_signal has the original coefficients
-        //h_signal_fft_ifft has the FFT --> iFFT coefficients
+    //    // Copy device memory to host
+    //    checkCudaErrors(cudaMemcpy(h_signal_fft_ifft, d_signal, mem_size,
+    //        cudaMemcpyDeviceToHost));
+    //    //h_signal has the original coefficients
+    //    //h_signal_fft_ifft has the FFT --> iFFT coefficients
 
-    }
+    //}
 
     freeMem = checkGpuMem();
     
@@ -144,28 +147,31 @@ int isOriginalEqualToTheTransformedAndInverseTransformenData(
     return iTestResult;
 }
 
-void printTheData(const std::complex<float>* original, const std::complex<float>* transformed, long dataSize, const rsize_t printOffset)
+void printTheData(const std::complex<float>* hIn, const std::complex<float>* hOut, long dataSize, const rsize_t printOffset)
 {
     std::cout << "The first " << dataSize << " real values with offset [" << printOffset << "] :" << std::endl;
-    if (original) {
+    if (hIn) {
         for (int i = 0; i < dataSize; ++i) {
-            std::cout << original[i + printOffset].real() << " ";
+            std::cout << hIn[i + printOffset].real() << " ";
         }
         std::cout << std::endl;
     }
-    if (transformed) {
+    if (hOut) {
         for (int i = 0; i < dataSize; ++i) {
-            std::cout << transformed[i + printOffset].real() << " ";
+            std::cout << hOut[i + printOffset].real() << " ";
         }
         std::cout << std::endl;
     }
 }
 
 
-void initializeTheSignals(std::complex<float>* fft, long dataSize) noexcept
+void initializeTheSignals(std::complex<float>* hIn, long dataSize) noexcept
 {
     for (long i = 0; i < dataSize; ++i) {
-        if (fft)
-            fft[i] = { rand() / static_cast<float>(RAND_MAX), 0 };
+        if (hIn) {
+            hIn[i] = { rand() / static_cast<float>(RAND_MAX), 0 };
+            //std::complex<float> val{ float(i), 1.0f };
+            //hIn[i] = val;
+        }
     }
 }

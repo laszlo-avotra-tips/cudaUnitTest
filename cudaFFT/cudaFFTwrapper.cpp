@@ -76,12 +76,13 @@ void ComputeTheFFT(std::complex<float>* h_signalOut, const std::complex<float>* 
     checkCudaErrors(cudaDeviceReset());
 }
 
-void addjustCoefficientMagnitude(std::complex<float>* h_data, long dataSize) noexcept
+void addjustCoefficientMagnitude(std::complex<float>* h_data, size_t dataSize) noexcept
 {
-
+    const float k = 1.0f / 8.0 / 133.0;
     if (h_data) {
-        for (long i = 0; i < dataSize; ++i) {
-            h_data[i] = { h_data[i].real() / 8.0f / dataSize, 0 };
+        for (size_t i = 0; i < dataSize; ++i) {
+            auto& thisData = h_data[i];
+            thisData = { thisData.real() * k , thisData.imag() * k };
         }
     }
 }

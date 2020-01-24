@@ -15,3 +15,5 @@ cudaVectorAddUt
 *.cache
 *.deps
 *.cpp.obj
+*.vcxproj
+cudaFFT/x64/Debug/cudaFFT.idb

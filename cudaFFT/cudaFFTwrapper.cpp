@@ -29,29 +29,14 @@ double checkGpuMem()
 
 void ComputeTheFFT(std::complex<float>* h_signalOut, const std::complex<float>* h_signalIn, size_t fftSize, int batch)
 {
-    const size_t workBatch{ 1024 };
-    const size_t workFftSize{ 2048 };
-    const size_t workDataSize{ workBatch * workFftSize };
+    const size_t dataSize{ fftSize * batch };
 
-    const size_t totalDataSize{ fftSize * batch };
-
-    if ((fftSize <= workFftSize) && (batch <= 16)) {
-        ComputeTheFFTdev(h_signalOut, h_signalIn, totalDataSize, batch);
-    }
-
-    else if ((fftSize <= workFftSize) && (batch <= workBatch)) {
-        ComputeTheFFTdev(h_signalOut, h_signalIn, totalDataSize, batch);
-    }
-    else {
-        for (size_t i = fftSize * batch - 9; i < fftSize * batch; ++i) {
-            h_signalOut[i] = { -1234.0f, 0 };
-        }
-    }
-}
-
-double ComputeTheFFTdev(std::complex<float>* h_signalOut, const std::complex<float>* h_signalIn, size_t dataSize, int batch)
-{
-    double freeMem{ -1 };
+    //ComputeTheFFTdev(h_signalOut, h_signalIn, dataSize, batch);
+//}
+//
+//double ComputeTheFFTdev(std::complex<float>* h_signalOut, const std::complex<float>* h_signalIn, size_t dataSize, int batch)
+//{
+//    double freeMem{ -1 };
     const size_t mem_size = sizeof(std::complex<float>) * dataSize;
 
     cufftComplex* d_signal{ nullptr };
@@ -87,28 +72,7 @@ double ComputeTheFFTdev(std::complex<float>* h_signalOut, const std::complex<flo
         // Check if kernel execution generated and error
     }
 
-    //if (h_signal_fft_ifft) {
-    //    // Transform signal back
-    //    //std::cout << "Transforming signal back cufftExecC2C" << std::endl;
-
-    //    cudaDeviceSynchronize();
-
-    //    checkCudaErrors(cufftExecC2C(plan, reinterpret_cast<cufftComplex*>(d_signal),
-    //        reinterpret_cast<cufftComplex*>(d_signal),
-    //        CUFFT_INVERSE));
-    //    //h_signal has the original coefficients
-    //    //d_signal has the FFT --> iFFT coefficients
-    //    //cudaDeviceSynchronize();
-
-    //    // Copy device memory to host
-    //    checkCudaErrors(cudaMemcpy(h_signal_fft_ifft, d_signal, mem_size,
-    //        cudaMemcpyDeviceToHost));
-    //    //h_signal has the original coefficients
-    //    //h_signal_fft_ifft has the FFT --> iFFT coefficients
-
-    //}
-
-    freeMem = checkGpuMem();
+    checkGpuMem();
     
     //checkCudaErrors(cufftDestroy(plan));
 
@@ -116,8 +80,6 @@ double ComputeTheFFTdev(std::complex<float>* h_signalOut, const std::complex<flo
     //checkCudaErrors(cudaFree(d_signal));
 
     checkCudaErrors(cudaDeviceReset());
-
-    return freeMem;
 }
 
 void addjustCoefficientMagnitude(std::complex<float>* h_data, long dataSize) noexcept

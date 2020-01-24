@@ -27,16 +27,10 @@ double checkGpuMem()
     return free_m;
 }
 
-void ComputeTheFFT(std::complex<float>* h_signalOut, const std::complex<float>* h_signalIn, size_t fftSize, int batch)
+void ComputeTheFFT(std::complex<float>* h_signalOut, const std::complex<float>* h_signalIn, int fftSize, int batch)
 {
-    const size_t dataSize{ fftSize * batch };
+    const int dataSize{ fftSize * batch };
 
-    //ComputeTheFFTdev(h_signalOut, h_signalIn, dataSize, batch);
-//}
-//
-//double ComputeTheFFTdev(std::complex<float>* h_signalOut, const std::complex<float>* h_signalIn, size_t dataSize, int batch)
-//{
-//    double freeMem{ -1 };
     const size_t mem_size = sizeof(std::complex<float>) * dataSize;
 
     cufftComplex* d_signal{ nullptr };
@@ -56,7 +50,7 @@ void ComputeTheFFT(std::complex<float>* h_signalOut, const std::complex<float>* 
         checkCudaErrors(cudaMemcpy(d_signal, h_signalIn, mem_size, cudaMemcpyHostToDevice));
 
         // CUFFT plan simple API
-        checkCudaErrors(cufftPlan1d(&plan, 2048, CUFFT_C2C, batch));
+        checkCudaErrors(cufftPlan1d(&plan, fftSize, CUFFT_C2C, batch));
 
         // Transform signal and kernel
         //std::cout << "Transforming signal cufftExecC2" << std::endl;
